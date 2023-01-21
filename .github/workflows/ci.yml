@@ -1,0 +1,32 @@
+name: Pinot Go Client CI
+
+on:
+  push:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  pinot-go-client-tests:
+    runs-on: ubuntu-latest
+    name: Pinot Go Client Tests
+    steps:
+      - uses: actions/checkout@v2
+      - name: Pull Pinot Docker Image
+        uses: ./.github/actions/pull-docker-image
+        with:
+          docker-image: apachepinot/pinot:latest
+      - name: Runs Pinot Docker Image
+        uses: ./.github/actions/run-docker-image
+        with:
+          docker-image: apachepinot/pinot:latest
+          controller-forward-port: 9000
+          broker-forward-port: 8000
+          arguments: QuickStart -type BATCH
+      - name: Run Tests
+        run: make test
+      - name: Clean up
+        if: always()
+        shell: bash
+        run: |
+          docker rm $(docker stop $(docker ps -a -q --filter ancestor="apachepinot/pinot:latest" --format="{{.ID}}"))
